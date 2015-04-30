@@ -11,6 +11,8 @@ import json
 import qdo
 from qdo import Task
 
+import requests
+
 from flask import Flask, escape, url_for
 import flask
 app = Flask(__name__)
@@ -28,7 +30,18 @@ a list of queues for that user."""
 @app.route('/<username>/')
 @app.route('/<username>/queues/')
 def qlist(username):
-    return flask.jsonify(dict(command="qdo list"))
+    data = dict(
+        ### executable="bash -lc 'qdo list'",
+        executable="python -c 'import qdo; print [q.summary() for q in qdo.qlist()]' ",
+        loginenv='true',
+    )
+    url = "https://newt.nersc.gov/newt/command/hopper/"
+    results = requests.post(url, data, cookies={'newt_sessionid': "xxx"})
+
+    return results.text
+    ### return flask.jsonify(results.contents)
+    
+#-------------------------------------------------------------------------
     
 @app.route('/<username>/queues/<queuename>/')
 def queue(username, queuename):
