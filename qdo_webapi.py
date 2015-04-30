@@ -30,13 +30,14 @@ a list of queues for that user."""
 @app.route('/<username>/')
 @app.route('/<username>/queues/')
 def qlist(username):
+    newt_session_id = flask.request.cookies.get('newt_session_id')
     data = dict(
         ### executable="bash -lc 'qdo list'",
         executable="python -c 'import qdo; print [q.summary() for q in qdo.qlist()]' ",
         loginenv='true',
     )
     url = "https://newt.nersc.gov/newt/command/hopper/"
-    results = requests.post(url, data, cookies={'newt_sessionid': "xxx"})
+    results = requests.post(url, data, cookies={'newt_sessionid': newt_session_id})
 
     return results.text
     ### return flask.jsonify(results.contents)
