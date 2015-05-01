@@ -10,7 +10,7 @@ Spring 2015
 import json
 import requests
 
-from flask import Flask, escape, url_for
+from flask import Flask, escape, url_for, make_response
 import flask
 app = Flask(__name__)
 
@@ -80,7 +80,6 @@ def queue(username, queuename):
     cmd = "python -c 'import qdo; print qdo.connect({})".format(queuename)
     return runcmd(cmd)
     
-#----
 @app.route('/<username>/queues/<queuename>/tasks/')
 def tasks(username, queuename):
     r = dict(command='qdo tasks '+queuename)
@@ -95,5 +94,39 @@ def get(username, queuename):
     r = dict(command="no direct qdo CL equivalent to get a single task and change its state to running")
     return flask.jsonify(r)
     
+@app.route('/login/', methods=['GET', 'POST'])
+def login():
+
+    if flask.request.method=='POST':
+        data = dict(
+            username = flask.request.form['username'],
+            password = flask.request.form['password']
+        )
+
+        url = "https://newt.nersc.gov/newt/auth/"
+        results = requests.post(url, data)
+        if results.status_code == 200:
+
+            res_obj = results.json()
+            newt_sessionid = res_obj['newt_sessionid']
+            res_obj['qdo_authkey'] = res_obj['newt_sessionid']
+            del res_obj['newt_sessionid'] 
+
+            response = make_response(json.dumps(res_obj))
+            response.set_cookie('qdo_authkey', newt_sessionid)
+            return response
+        else:
+            return "error", 404
+
+    else:
+        return '''
+        <form action="/login/" method="post">
+            <p><input type=text name=username>
+            <p><input type=password name=password>
+            <p><input type=submit value=Login>
+        </form>
+        '''
+
+
 if __name__ == "__main__":
     app.run(debug=True)
