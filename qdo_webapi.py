@@ -27,17 +27,46 @@ This is the web api for that toolkit.  Start at {baseurl}/{username} for
 a list of queues for that user."""
     return flask.jsonify(r)
 
+@app.route('/auth/')
+def auth():
+    data = dict(
+        username = flask.request.form.get('username'),
+        password = flask.request.form.get('password'),
+        )
+    
+    url = "https://newt.nersc.gov/newt/auth/"
+    results = requests.post(url, data)
+    return results.json
+    
+"""
+import getpass
+import requests
+
+#- Get newt_sessionid from NEWT authorization; cache that somehow
+url = "https://newt.nersc.gov/newt/auth/"
+data = dict()
+data['username'] = 'sjbailey'
+data['password'] = getpass.getpass()
+results = requests.post(url, data)
+newt_sessionid = results.json()['newt_sessionid']
+
+#- then use that newt_sessionid, passing in as a cookie that flask will pick
+#- up and use with its call to NEWT
+r = requests.get("http://127.0.0.1:5000/sjbailey/queues/", cookies={'newt_sessionid': newt_sessionid})
+"""
+
 @app.route('/<username>/')
 @app.route('/<username>/queues/')
 def qlist(username):
-    newt_session_id = flask.request.cookies.get('newt_session_id')
+    newt_sessionid = flask.request.cookies.get('newt_sessionid')
     data = dict(
-        ### executable="bash -lc 'qdo list'",
         executable="python -c 'import qdo; print [q.summary() for q in qdo.qlist()]' ",
         loginenv='true',
     )
     url = "https://newt.nersc.gov/newt/command/hopper/"
-    results = requests.post(url, data, cookies={'newt_sessionid': newt_session_id})
+    results = requests.post(url, data, cookies={'newt_sessionid': newt_sessionid})
+
+    print 'newt_session_id', newt_session_id
 
     return results.text
     ### return flask.jsonify(results.contents)
