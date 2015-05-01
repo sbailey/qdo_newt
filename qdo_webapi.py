@@ -80,7 +80,6 @@ def queue(username, queuename):
     cmd = "python -c 'import qdo; print qdo.connect({})".format(queuename)
     return runcmd(cmd)
     
-#----
 @app.route('/<username>/queues/<queuename>/tasks/')
 def tasks(username, queuename):
     r = dict(command='qdo tasks '+queuename)
@@ -107,9 +106,14 @@ def login():
         url = "https://newt.nersc.gov/newt/auth/"
         results = requests.post(url, data)
         if results.status_code == 200:
-            newt_sessionid = results.json()['newt_sessionid']
-            response = make_response(results.text)
-            response.set_cookie('qdo_auth_key', newt_sessionid)
+
+            res_obj = results.json()
+            newt_sessionid = res_obj['newt_sessionid']
+            res_obj['qdo_authkey'] = res_obj['newt_sessionid']
+            del res_obj['newt_sessionid'] 
+
+            response = make_response(json.dumps(res_obj))
+            response.set_cookie('qdo_authkey', newt_sessionid)
             return response
         else:
             return "error", 404
