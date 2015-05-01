@@ -24,7 +24,7 @@ This is the web api for that toolkit.  Start at {baseurl}/{username} for
 a list of queues for that user."""
     return flask.jsonify(r)
 
-@app.route('/auth/')
+@app.route('/auth', methods=['POST'])
 def auth():
     data = dict(
         username = flask.request.form.get('username'),
@@ -37,9 +37,9 @@ def auth():
     #- rename newt_sessionid -> qdo_authkey
     results = r.json()
     results['qdo_authkey'] = results['newt_sessionid']
-    del results['new_sessionid']
+    del results['newt_sessionid']
     
-    return results
+    return json.dumps(results)
     
 """
 import getpass
@@ -58,12 +58,12 @@ newt_sessionid = results.json()['newt_sessionid']
 r = requests.get("http://127.0.0.1:5000/sjbailey/queues/", cookies={'newt_sessionid': newt_sessionid})
 """
 
-def runcmd():
+def runcmd(cmd):
     hostname = 'hopper'
     cmdurl = "https://newt.nersc.gov/newt/command/"+hostname
     qdo_authkey = flask.request.cookies.get('qdo_authkey')
     data = dict(
-        executable="python -c 'import qdo; print [q.summary() for q in qdo.qlist()]' ",
+        executable=cmd,
         loginenv='true',
     )
     results = requests.post(cmdurl, data, cookies={'newt_sessionid': qdo_authkey})
