@@ -1,11 +1,13 @@
 qdo webserver
-=============
+-------------
 
 This package provides a web interface for QDO (kew-doo),
 a lightweight toolkit for processing many tasks in a queue.
 
   * https://bitbucket.org/berkeleylab/qdo
   * https://bitbucket.org/berkeleylab/qdo_webserver
+  
+Run `bin/qdo_webserver` to start an example session using NERSC as the backend.
   
 ## Authentication ##
 
@@ -47,6 +49,8 @@ Python example using the requests library:
 
 ## API definition ##
 
+These still need details, but they define the basic set of URLs.
+
 ### Get qdo_authkey token
     GET  {baseurl}/site/login
     Returns qdo_authkey authorization token
@@ -56,76 +60,76 @@ Python example using the requests library:
     Returns JSON structure of site information, details TBD
     
 ### list queues for user
-    http:   GET {baseurl}/users/{user}/queues/
-    python: qdo.qlist(user=user)
+    http:   GET {baseurl}/{user}/queues/
+    python: qdo.tojson(qdo.qlist(user=user))
 
-GET  {baseurl}/<user>/queues/<queue>
-    - get queue details
-    - python: repr(qdo.connect(queue, user=user))
+### get queue details
+    http:   GET {baseurl}/{user}/queues/{queue}
+    python: qdo.tojson(qdo.connect(queue, user=user))
     
-PUT  {baseurl}/<user>/queues/<queue>
-    - create a new queue
-    - python: qdo.create(queue, user=user)
+### create a new queue
+    http:   PUT {baseurl}/{user}/queues/{queue}
+    python: qdo.create(queue, user=user)
     
-PUT  {baseurl}/<user>/queues/<queue>/retry
-    - retry failed tasks in queue
-    - python: qdo.connect(queue, user=user).retry()
+### retry failed tasks in queue
+    http:   PUT {baseurl}/{user}/queues/{queue}/retry
+    python: qdo.connect(queue, user=user).retry()
 
-PUT  {baseurl}/<user>/queues/<queue>/recover
-    - reset running tasks back to pending
-    - python: qdo.connect(queue, user=user).recover()
+### reset running tasks back to pending
+    http:   PUT {baseurl}/{user}/queues/{queue}/recover
+    python: qdo.connect(queue, user=user).recover()
 
-PUT  {baseurl}/<user>/queues/<queue>/pause
-    - pause queue
-    - python: qdo.connect(queue, user=user).pause()
+### pause queue
+    http:   PUT {baseurl}/{user}/queues/{queue}/pause
+    python: qdo.connect(queue, user=user).pause()
 
-PUT  {baseurl}/<user>/queues/<queue>/resume
-    - resume queue
-    - python: qdo.connect(queue, user=user).resume()
+### resume queue
+    http:   PUT {baseurl}/{user}/queues/{queue}/resume
+    python: qdo.connect(queue, user=user).resume()
 
-DELETE {baseurl}/<user>/queues/<queue>
-    - delete the queue
-    - python: qdo.connect(queue, user=user).delete()
+### delete the queue
+    http: DELETE {baseurl}/{user}/queues/{queue}
+    python: qdo.connect(queue, user=user).delete()
 
-POST {baseurl}/<user>/queues/<queue>/launch
-    - launch jobs to process tasks in queue
-    - qdo.connect(queue, user=user).launch(...)
-    - see python qdo docs for many options to launch
+### launch jobs to process tasks in queue
+    http:   POST {baseurl}/{user}/queues/{queue}/launch
+    python: qdo.connect(queue, user=user).launch(...)
+    see python qdo docs for many options to launch(...)
+
+### list tasks in queue
+    http:   GET {baseurl}/{user}/queues/{queue}/tasks/
+    python: qdo.tojson(qdo.connect(queue, user=user).tasks())
+
+### list tasks in queue with filter on state and/or exitcode
+    http:   GET {baseurl}/{user}/queues/{queue}/tasks/?state=<state>&exitcode=<exitcode>
+    python: qdo.tojson(qdo.connect(queue, user=user).tasks(state=state, exitcode=exitcode))
+
+### add new task(s) to queue
+    http:   POST {baseurl}/{user}/queues/{queue}/addtask/
+    http:   POST {baseurl}/{user}/queues/{queue}/tasks/
+    python:
+        qdo.connect(queue, user=user).add(data.command)             #- single task
+        qdo.connect(queue, user=user).add_multiple(data.commands)   #- multiple tasks
+
+TODO: document how to distinguish between single task vs. multiple tasks for the REST API
+
+### view a specific task
+    http:   GET  {baseurl}/{user}/queues/{queue}/tasks/<taskid>
+    python: qdo.tojson(do.connect(queue, user=user).tasks(id=taskid))
+
+### modify a task with state and optionally err and/or message
+    http:   PUT  {baseurl}/{user}/queues/{queue}/tasks/<taskid>
+    python:
+        task = qdo.connect(queue, user=user).tasks(id=taskid)
+        task.set_state(state=data.state, err=data.err, message=data.message)
     
-GET  {baseurl}/<user>/queues/<queue>/tasks/
-    - list tasks in queue
-    - python: qdo.connect(queue, user=user).tasks()
+### get task and set state=RUNNING as an atomic operation
+    http:   POST {baseurl}/{user}/queues/{queue}/poptask
+    python: task = qdo.tojson(qdo.connect(queue, user=user).get())
 
-GET  {baseurl}/<user>/queues/<queue>/tasks/?state=<state>&exitcode=<exitcode>
-    - list tasks in queue with filter on state and/or exitcode
-    - python: qdo.connect(queue, user=user).tasks(state=state, exitcode=exitcode)
-    
-POST {baseurl}/<user>/queues/<queue>/addtask/
-POST {baseurl}/<user>/queues/<queue>/tasks/
-    - add new task to queue
-    - qdo.connect(queue, user=user).add(data.command)
+Users calling this function are then expected to run the task and then
+use the previous command to update the Task state (e.g. succeeded or failed).
 
-POST {baseurl}/<user>/queues/<queue>/addtasks/
-POST {baseurl}/<user>/queues/<queue>/batchtasks/
-    - add multiple new tasks to queue
-    - qdo.connect(queue, user=user).add_multiple(data.commands)
-    - better name?  add_multiple?  batch_add?
-    - combine with addtask using introspection for single vs. multiple?
-    
-GET  {baseurl}/<user>/queues/<queue>/tasks/<taskid>
-    - view a specific task
-    - qdo.connect(queue, user=user).tasks(id=taskid)
-    
-PUT  {baseurl}/<user>/queues/<queue>/tasks/<taskid>
-    - modify a task with state and optionally err and/or message
-    - task = qdo.connect(queue, user=user).tasks(id=taskid)
-    - task.set_state(state=data.state, err=data.err, message=data.message)
-    
-POST {baseurl}/<user>/queues/<queue>/get
-POST {baseurl}/<user>/queues/<queue>/poptask
-    - get task and set state=RUNNING as an atomic operation
-    - python: task = qdo.connect(queue, user=user).get()
-    --> better name?  poptask?  get?  run?
 
 ## Developer notes
 

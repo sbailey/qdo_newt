@@ -33,7 +33,7 @@ def login():
             #- TODO: what should this be?
             return "error", 404
             
-        results['links'] = dict(queues = url_for('qlist', username=username))
+        results['links'] = dict(queues = url_for('queues', username=username))
         response = make_response(json.dumps(results))
         response.set_cookie('qdo_authkey', results['qdo_authkey'])
         response.set_cookie('qdo_username', results['qdo_username'])
@@ -72,23 +72,22 @@ def start():
 
 #-------------------------------------------------------------------------
 #- qdo REST API
+#- Examples, far from complete
 
 @app.route('/<username>/')
 @app.route('/<username>/queues/')
-def qlist(username):
-    ### cmd = "python -c 'import qdo; print [q.summary() for q in qdo.qlist()]' "
-    #- TODO: needs a dictionary not a list
-    cmd = "python -c 'import qdo; print qdo.qlist()' "
+def queues(username):
+    cmd = "python -c 'import qdo; print qdo.tojson(qdo.queues())' "
     return flask.current_app.site.runcmd(cmd)
     
 @app.route('/<username>/queues/<queuename>/')
 def queue(username, queuename):
-    cmd = """python -c 'import qdo; print repr(qdo.connect("{}"))' """.format(queuename)
+    cmd = """python -c 'import qdo; print qdo.tojson(qdo.connect("{}"))' """.format(queuename)
     return flask.current_app.site.runcmd(cmd)
     
 @app.route('/<username>/queues/<queuename>/tasks/')
 def tasks(username, queuename):
-    cmd = """python -c 'import qdo; print qdo.connect("{}").tasks()' """.format(queuename)
+    cmd = """python -c 'import qdo; print qdo.tojson(qdo.connect("{}").tasks())' """.format(queuename)
     return flask.current_app.site.runcmd(cmd)
 
 @app.route('/<username>/queues/<queuename>/tasks/<taskid>', methods=['POST', 'GET'])
@@ -98,13 +97,12 @@ def task(username, queuename, taskid):
         return "Not implemented", 501
     elif flask.request.method == 'GET':
         #- GET: take a look at an existing Task
-        cmd = """python -c 'import qdo; print qdo.connect("{}").tasks("{}")' """.format(queuename, taskid)
+        cmd = """python -c 'import qdo; print qdo.tojson(qdo.connect("{}").tasks("{}") )' """.format(queuename, taskid)
         return flask.current_app.site.runcmd(cmd)
         
-#- Should we rename this?
-@app.route('/<username>/queues/<queuename>/get/')
+@app.route('/<username>/queues/<queuename>/poptask/')
 def get(username, queuename):
-    cmd = """python -c 'import qdo; print qdo.connect("{}").get()' """.format(queuename)
+    cmd = """python -c 'import qdo; print qdo.tojson(qdo.connect("{}").get()') """.format(queuename)
     return flask.current_app.site.runcmd(cmd)
     
 #- ...

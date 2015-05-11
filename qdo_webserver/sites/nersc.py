@@ -39,7 +39,13 @@ class NERSC(BaseSite):
             d['status_code'] = results.status_code
             raise RuntimeError(json.dumps(d))
             
-    def runcmd(self, cmd, qdo_authkey=None, username=None, hostname=None):
+    def runcmd(self, cmd, qdo_authkey=None, qdo_username=None, hostname=None):
+        """
+        See qdo_webserver.sites.base.BaseSite for details
+        
+        This API requires qdo_username as an option, but it isn't used;
+        NERSC authenticates using only the qdo_authkey -> newt_sessionid.
+        """
         if hostname is None:
             hostname = self.hostname
             
