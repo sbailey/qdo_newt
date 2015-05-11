@@ -25,22 +25,22 @@ def login():
     Returns results with qdo_authkey cookie and data including keys
     """
     if flask.request.method=='POST':
-        username = flask.request.form.get('username'),
-        password = flask.request.form.get('password'),
+        username = flask.request.form.get('username')
+        password = flask.request.form.get('password')
         try:
             results = flask.current_app.site.login(username, password)
         except RuntimeError:
             #- TODO: what should this be?
             return "error", 404
             
-        results['links'] = dict(queues = url_for('queues', username=username))
+        results['links'] = dict(queues = flask.request.url_root+url_for('queues', username=username))
         response = make_response(json.dumps(results))
         response.set_cookie('qdo_authkey', results['qdo_authkey'])
         response.set_cookie('qdo_username', results['qdo_username'])
         return response
     else:
         return '''
-        <form action="/site/login/" method="post">
+        <form action="/site/login" method="post">
             <p>Enter your NERSC username and password</p>
             <p>username<input type=text name=username>
             <p>password<input type=password name=password>
@@ -64,7 +64,7 @@ def start():
     response['version'] = __version__
     response['info'] = "This is the REST API for QDO (kew-doo), a lightweight toolkit for processing many tasks in a queue."
     response['links'] = dict(
-        login = flask.request.url_root+'login',
+        login = flask.request.url_root+'site/login',
         qdo = 'https://bitbucket.org/berkeleylab/qdo',
         qdo_webserver = 'https://bitbucket.org/berkeleylab/qdo_webserver',
         )
