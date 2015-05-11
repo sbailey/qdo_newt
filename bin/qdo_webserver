@@ -1,0 +1,8 @@
+#!/usr/bin/env python
+
+from qdo_webserver.sites import NERSC
+from qdo_webserver import api
+
+from flask import Flask
+api.app.site = NERSC()
+api.app.run(debug=True)
